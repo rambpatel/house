@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MAX_HOUSES 8
+#define MAX_HOUSES 2000
 // radius of earth
 #define R 6371
 
@@ -87,7 +87,7 @@ void printHouse(struct House *hp,char *msg)
 	FILE *fp;
 	fp=fopen("query.rpt","a");
 	fprintf(fp," *** REPORT ON MATCHING HOUSES *** \n\n");
-    fprintf(fp, msg);
+        fprintf(fp, msg);
 	fprintf(fp,"--- House ID # %d ---\n",hp->Id);
 	fprintf(fp,"Latitude  : %10f\n",hp->latitude);
 	fprintf(fp,"Longitude : %10f\n",hp->longitude);
@@ -100,7 +100,7 @@ void printHouse(struct House *hp,char *msg)
 }struct House *makeHouse()
 {
 	struct House *hp, house[MAX_HOUSES];
-    int count=0;
+        int count=0;
 	
 	FILE *fp;
 	fp = fopen("houses.dat","r");
@@ -116,13 +116,25 @@ void printHouse(struct House *hp,char *msg)
 		}
 		fclose(fp);
 	}
+	// assign array to pointer and return pointer
 	hp=house;
 	return hp;
 }
+/*
+ Function : earthDistance
+ Purpose  : to calculate distance according to latitude and longitude
+ Parameter1  : x1 (float)
+ Parameter2  : x2 (float)
+ Parameter3  : y1 (float)
+ Parameter4  : y2 (float)
+ return      : int
+ */
 
 int earthDistance(float x1,float y1,float x2,float y2)
 {
-	float lat=(x2-x1) *M_PI/180;
+      // x1 and x2 are used as latitude 
+      // y1 and y2 are used as longitude
+	float lat=(x2-x1)*M_PI/180;
 	float lon=(y2-y1)*M_PI/180;
 	
 	double a, b, c;
@@ -132,11 +144,20 @@ int earthDistance(float x1,float y1,float x2,float y2)
 	
 	return c;
 }
-
+/*
+ Function  : distanceWithin
+ Purpose   : to check if the house location is in specified distance and location
+ Parameter1 : struct House *p
+ Parameter2 : km (int)
+ Parameter3  : lat (float)
+ Parameter4  : lon (float)
+ return   : int
+ */
 int distanceWithin(struct House *p,int km,float lat,float log)
 {
     int count=0;
     struct House h[MAX_HOUSES],*fh;
+
     char *msg="Location Range: ";
     sprintf(msg, " %d km from %f N, %f W",km,lat,log);
     for(int i=0;i<MAX_HOUSES;i++)
