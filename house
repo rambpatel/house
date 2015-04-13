@@ -3,38 +3,40 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MAX_HOUSES 2000
+#define MAX_HOUSES 8
 // radius of earth
 #define R 6371
 
 struct House
 {
-   int Id;
-   float latitude;
-   float longitude;
-   int price;
-   int bedrooms;
-   int area;
-   int age;
+	int Id;
+	float latitude;
+	float longitude;
+	int price;
+	int bedrooms;
+	int area;
+	int age;
 };
 
 struct House *makeHouse();
 void processQuery(struct House *h);
-void printHouse(struct House *hp);
+void printHouse(struct House *hp,char *msg);
 int earthDistance(float x1,float y1,float x2,float y2);
-void priceInRange(struct House *p);
-void distanceWithin(struct House *h);
-void processQueryPrice();
+int priceInRange(struct House *p,int low,int high);
+int distanceWithin(struct House *h,int km,float lat,float log);
+void processQueryPrice(struct House *p);
+void processQueryRange(struct House *p);
+
 int main()
 {
-        struct House *h;
-        h=makeHouse();
-
-        printf("\n\n=== HOUSE QUERY SYSTEM ===  \n\n");
-        printf("Loading houses.dat ... contains 1000 houses\n\n");
-
-        processQuery(h);
-          return 0;
+	struct House *h;
+	h=makeHouse();
+    
+	printf("\n\n=== HOUSE QUERY SYSTEM ===  \n\n");
+	printf("Loading houses.dat ... contains %d houses\n\n",MAX_HOUSES);
+	
+	processQuery(h);
+	return 0;
 }
 
 /*
@@ -42,36 +44,36 @@ int main()
  Purpose   : To process query according to input
  Parameter : struct House *h
  return    : void
-*/
+ */
 void processQuery(struct House *h)
 {
-     char menu;
-     printf("Enter query [h for help] ==>");
-     scanf("%c",&menu);
-               if(menu=='p' || menu=='P')
-                {
-                       processQueryPrice();
-                }
-                else if(menu=='d' || menu=='D')
-                {
-                       distanceWithin(h);
-                }
-                else if(menu=='h' || menu=='H')
-                {
-                        printf("\n\n=== Enter 'd' to find houses in distance === \n=== Enter 'p' to find houses according to price range ===\n");
-                        printf("=== Enter 'q' to quit search ===\n\n\n");
-                }
-                else if(menu=='q' || menu=='Q')
-                {
-                        printf("Thanks For Searching\n");
-                }
-                else
-                {
-                   printf("\n\nPlease enter h for help\n");
-                }
-                  printf("\n\nDetails are in query.rpt\n\n");
-   printf("=== END === \n\n");
-
+	char menu;
+	printf("Enter query [h for help] ==>");
+	scanf("%c",&menu);
+	if(menu=='p' || menu=='P')
+	{
+		processQueryPrice(h);
+	}
+	else if(menu=='d' || menu=='D')
+	{
+		processQueryRange(h);
+	}
+	else if(menu=='h' || menu=='H')
+	{
+		printf("\n\n=== Enter 'd' to find houses in distance === \n=== Enter 'p' to find houses according to price range ===\n");
+		printf("=== Enter 'q' to quit search ===\n\n\n");
+	}
+	else if(menu=='q' || menu=='Q')
+	{
+		printf("Thanks For Searching\n");
+	}
+	else
+	{
+		printf("\n\nPlease enter h for help\n");
+	}
+	printf("\n\nDetails are in query.rpt\n\n");
+	printf("=== END === \n\n");
+	
 }
 
 /*
@@ -79,95 +81,148 @@ void processQuery(struct House *h)
  Purpose   : To append output to the file query.rpt
  Parameter : struct House *hp
  return    : void
-*/
-void printHouse(struct House *hp)
+ */
+void printHouse(struct House *hp,char *msg)
 {
-       FILE *fp;
-       fp=fopen("query.rpt","a");
-       fprintf(fp," *** REPORT ON MATCHING HOUSES *** \n\n");
-       fprintf(fp,"--- House ID # %d ---\n",hp->Id);
-       fprintf(fp,"Latitude  : %10f\n",hp->latitude);
-       fprintf(fp,"Longitude : %10f\n",hp->longitude);
-       fprintf(fp,"Price     : %10d\n",hp->price);
-       fprintf(fp,"Bedrooms  : %10d\n",hp->bedrooms);
-       fprintf(fp,"Area      : %10d\n",hp->area);
-       fprintf(fp,"Age       : %10d\n\n",hp->age);
-
-       fclose(fp);
+	FILE *fp;
+	fp=fopen("query.rpt","a");
+	fprintf(fp," *** REPORT ON MATCHING HOUSES *** \n\n");
+    fprintf(fp, msg);
+	fprintf(fp,"--- House ID # %d ---\n",hp->Id);
+	fprintf(fp,"Latitude  : %10f\n",hp->latitude);
+	fprintf(fp,"Longitude : %10f\n",hp->longitude);
+	fprintf(fp,"Price     : %10d\n",hp->price);
+	fprintf(fp,"Bedrooms  : %10d\n",hp->bedrooms);
+	fprintf(fp,"Area      : %10d\n",hp->area);
+	fprintf(fp,"Age       : %10d\n\n",hp->age);
+	
+	fclose(fp);
 }struct House *makeHouse()
 {
-        struct House *hp, house[MAX_HOUSES];
+	struct House *hp, house[MAX_HOUSES];
+    int count=0;
+	
+	FILE *fp;
+	fp = fopen("houses.dat","r");
 
-        int count=0;
-
-        FILE *fp;
-        fp = fopen("houses.dat","r");
-
-        if(fp != NULL)
+	if(fp != NULL)
+	{
+		
+		while(fscanf(fp, "%1d %f %f %d %d %d %d",&house[count].Id,&house[count].latitude,&house[count].longitude,
+					&house[count].price,&house[count].bedrooms,&house[count].area,&house[count].age) == 7)
         {
-
-         while(fscanf(fp, "%d %f %f %d %d %d %d",&house[count].Id,&house[count].latitude,&house[count].longitude,
-                                                    &house[count].price,&house[count].bedrooms,&house[count].area,&house[count].age) == 7)
-             {
-                ++count;
-             }
-               fclose(fp);
-        }
-        hp=house;
-        return hp;
+			++count;
+           
+		}
+		fclose(fp);
+	}
+	hp=house;
+	return hp;
 }
 
 int earthDistance(float x1,float y1,float x2,float y2)
 {
-        float lat=(x2-x1) *M_PI/180;
-        float lon=(y2-y1)*M_PI/180;
-
-         double a, b, c;
-        a = sin(lat/2)*sin(lat/2)+cos(x1*M_PI/180)*cos(x2*M_PI/180)*sin(lon/2)*sin(lon/2);
-        b= 2*asin(sqrt(a));
-        c=R*b;
-
-        return c;
-}void distanceWithin(struct House *h)
-{
-        int km;
-        float x1, y1, x2, y2;
-        printf("\nEnter distance and Location:");
-        scanf("%d %f %f",&km,&x1,&y1);
-        int count=0;
-        for(int i=0;i<MAX_HOUSES;i++)
-        {
-
-                int distance=earthDistance(x1,y1,h->latitude,h->longitude);
-                if(distance<=km)
-                {
-                        printHouse(h);
-                        count++;
-                }
-                ++h;
-        }
-        printf("\nNumber of matching houses: %d",count);
+	float lat=(x2-x1) *M_PI/180;
+	float lon=(y2-y1)*M_PI/180;
+	
+	double a, b, c;
+	a = sin(lat/2)*sin(lat/2)+cos(x1*M_PI/180)*cos(x2*M_PI/180)*sin(lon/2)*sin(lon/2);
+	b= 2*asin(sqrt(a));
+	c=R*b;
+	
+	return c;
 }
 
-void priceInRange(struct House *p)
+int distanceWithin(struct House *p,int km,float lat,float log)
 {
-     int low, high, count;
-      for(int i=0; i<MAX_HOUSES; i++)
-      {
+    int count=0;
+    struct House h[MAX_HOUSES],*fh;
+    char *msg="Location Range: ";
+    sprintf(msg, " %d km from %f N, %f W",km,lat,log);
+    for(int i=0;i<MAX_HOUSES;i++)
+	{
+		int distance=earthDistance(lat,log,h->latitude,h->longitude);
+		if(distance<=km)
+		{
+            h[count].Id=p->Id;
+            h[count].latitude=p->latitude;
+            h[count].longitude=p->longitude;
+            h[count].price=p->price;
+            h[count].bedrooms=p->bedrooms;
+            h[count].area=p->area;
+            h[count].age=p->age;
+            
+            count++;
+		}
+		++p;
+	}
+    
+    fh=h;
+    if (count>0) {
+        printHouse(fh, msg);
+        return 1;
+    }
+    printf("\nNumber of matching houses: %d",count);
 
-            if(p->price >= low && p->price <= high)
-            {
-                if(p->Id <10999  && p->Id >10000)
-                {
-                      printHouse(p);
-                      count++;
-                }
-            }void processQueryPrice(struct House *p)
+    return 0;
+	}
+
+void processQueryRange(struct House *p)
 {
-
-      int low, high;
-      printf("\nEnter price range [low high]: ");
-      scanf("%d %d",&low, &high);
-      int count=0;
-      priceInRange(p);
+    int km;
+    float latitude, longitude;
+    printf("Enter distance and location [distance latitude longitude] ==> ");
+    scanf("%d %f %f", &km, &latitude, &longitude);
+    distanceWithin(p, km, latitude, longitude);
 }
+
+int priceInRange(struct House *p,int low,int high)
+{
+    printf("Price in Range\n");
+	int count=0;
+    struct House h[MAX_HOUSES],*fh;
+    char *msg="Price Range: ";
+	for(int i=0; i<MAX_HOUSES; i++)
+	{
+       
+
+		if(p->price >= low && p->price <= high)
+		{
+            
+			//if(p->Id <10999  && p->Id >10000)
+			{
+                h[count].Id=p->Id;
+                h[count].latitude=p->latitude;
+                h[count].longitude=p->longitude;
+                h[count].price=p->price;
+                h[count].bedrooms=p->bedrooms;
+                h[count].area=p->area;
+                h[count].age=p->age;
+                //printf("\n%d ",p->Id);
+				count++;
+			}
+		}
+    }
+    fh=h;
+    
+    if (count>0) {
+        sprintf(msg, "$%d TO $%d",low,high);
+        printHouse(fh, msg);
+        return 1;
+    }
+    printf("\nNumber of matching houses: %d",count);
+
+    return 0;
+}
+
+
+void processQueryPrice(struct House *p)
+{
+			
+    int low, high;
+    printf("\nEnter price range [low high]: ");
+    scanf("%d %d",&low, &high);
+   // int count=0;
+    priceInRange(p, low, high);
+}
+
